@@ -4,7 +4,6 @@ namespace SellingPartnerApi;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\RequestOptions;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use RuntimeException;
 
 use SellingPartnerApi\Model\FeedsV20210630\CreateFeedDocumentResponse;
@@ -119,40 +118,11 @@ class Document
             $contents = mb_convert_encoding($contents, "UTF-8", $encoding ?? mb_internal_encoding());
         }
 
-        $fileType = IOFactory::identify($this->tmpFilename);
-        $reader = IOFactory::createReader($fileType);
         switch ($this->contentType) {
             case ContentType::TAB:
-                // Amazon doesn't use enclosure characters, and passing an empty string to setEnclosure
-                // results in the default enclosure being used (a double quote character), so we use a
-                // bizarre character to avoid recognizing double quotes as enclosures.
-                // Thanks @gregordonsky (https://github.com/gregordonsky) for the idea!
-                $reader->setEnclosure(chr(8));
             case ContentType::CSV:
             case ContentType::XLSX:
-                $this->tmpFilename = tempnam(sys_get_temp_dir(), "tempdoc_spapi");
-                $tempFile = fopen($this->tmpFilename, "r+");
-                fwrite($tempFile, $contents);
-                fclose($tempFile);
-
-                $spreadsheet = IOFactory::load($this->tmpFilename);
-                if ($this->contentType !== ContentType::XLSX) {
-                    $sheet = $spreadsheet->getSheet(0)->toArray();
-                    // Turn each row of data into an associative array with the headers as keys
-                    array_walk($sheet, function(&$row) use ($sheet) {
-                        $row = array_combine($sheet[0], $row);
-                    });
-                    // Remove headers line
-                    array_shift($sheet);
-                    $this->data = $sheet;
-                } else {
-                    $this->data = $spreadsheet;
-                }
-                unlink($this->tmpFilename);
-                break;
             case ContentType::JSON:
-                $this->data = json_decode($contents, true);
-                break;
             case ContentType::PDF:
             case ContentType::PLAIN:
                 $this->data = $contents;
