@@ -5,23 +5,55 @@ A PHP library for connecting to Amazon's [Selling Partner API](https://github.co
 [![Latest Stable Version](https://img.shields.io/packagist/v/jlevers/selling-partner-api.svg?style=flat-square)](https://packagist.org/packages/jlevers/selling-partner-api)
 [![License](https://img.shields.io/packagist/l/jlevers/selling-partner-api.svg?style=flat-square)](https://packagist.org/packages/jlevers/selling-partner-api)
 
+| | |
+| ------ | ------ |
+| [![Highside Labs Logo](https://highsidelabs.co/static/favicons/favicon.png)](https://highsidelabs.co) | **This package is developed and maintained as part of [Highside Labs](https://highsidelabs.co). If you need support integrating with Amazon's (or any other e-commerce platform's) APIs, we're happy to help! Shoot us an email at [hi@highsidelabs.co](mailto:hi@highsidelabs.co). We'd love to hear from you :)** |
+
 If you've found this library useful, please consider [becoming a Sponsor](https://github.com/sponsors/jlevers), or making a one-time donation via the button below. I appreciate any and all support you can provide!
 
 [![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donateCC_LG.gif)](https://www.paypal.com/donate?business=EL4PRLAEMGXNQ&currency_code=USD)
 
+---
 
 ## Features
 
-* Supports all Selling Partner API operations (for Sellers and Vendors) as of /20/2022 ([see here](#supported-api-segments) for links to documentation for all calls)
+* Supports all Selling Partner API operations (for Sellers and Vendors) as of 11/13/2022 ([see here](#supported-api-segments) for links to documentation for all calls)
 * Supports applications made with both IAM user and IAM role ARNs ([docs](#setup))
 * Automatically generates Restricted Data Tokens for all calls that require them -- no extra calls to the Tokens API needed
 * Includes a [`Document` helper class](#uploading-and-downloading-documents) for uploading and downloading feed/report documents
+
+
+## Sponsors
+
+* **[Tesmo](https://tesmollc.com)**
 
 
 ## Installation
 
 `composer require jlevers/selling-partner-api`
 
+
+## Table of Contents 
+
+Check out the [Getting Started](#getting-started) section below for a quick overview.
+
+This README is divided into several sections:
+* [Setup](#setup)
+    * [Configuration options](#configuration-options)
+* [Examples](#examples)
+* [Debug mode](#debug-mode)
+* [Supported API segments](#supported-api-segments)
+    * [Seller APIs](#seller-apis)
+    * [Vendor APIs](#vendor-apis)
+* [Restricted operations](#restricted-operations)
+* [Uploading and downloading documents](#uploading-and-downloading-documents)
+    * [Downloading a report document](#downloading-a-report-document)
+    * [Uploading a feed document](#uploading-a-feed-document)
+    * [Downloading a feed result document](#downloading-a-feed-result-document)
+* [Working with model classes](#working-with-model-classes)
+* [Response headers](#response-headers)
+* [Custom request authorization](#custom-authorization-signer)
+* [Custom request signing](#custom-request-signer)
 
 ## Getting Started
 
@@ -88,8 +120,10 @@ The array passed to the `Configuration` constructor accepts the following keys:
 * `roleArn (string)`: If you set up your SP API application with an AWS IAM role ARN instead of a user ARN, pass that ARN here.
 * `authenticationClient (GuzzleHttp\ClientInterface)`: Optional `GuzzleHttp\ClientInterface` object that will be used to generate the access token from the refresh token
 * `tokensApi (SellingPartnerApi\Api\TokensApi)`: Optional `SellingPartnerApi\Api\TokensApi` object that will be used to fetch Restricted Data Tokens (RDTs) when you call a [restricted operation](https://developer-docs.amazon.com/sp-api/docs/tokens-api-use-case-guide)
+* `authorizationSigner (SellingPartnerApi\Contract\AuthorizationSignerContract)`: Optional `SellingPartnerApi\Contract\AuthorizationSignerContract` implementation. See [Custom Authorization Signer](#custom-authorization-signer) section
+* `requestSigner (SellingPartnerApi\Contract\RequestSignerContract)`: Optional `SellingPartnerApi\Contract\RequestSignerContract` implementation. See [Custom Request Signer](#custom-request-signer) section.
 
-### Example
+### Examples
 
 This example assumes you have access to the `Seller Insights` Selling Partner API role, but the general format applies to any Selling Partner API request.
 
@@ -117,11 +151,13 @@ try {
     $result = $api->getMarketplaceParticipations();
     print_r($result);
 } catch (Exception $e) {
-    echo 'Exception when calling SellersV0Api->getMarketplaceParticipations: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling SellersApi->getMarketplaceParticipations: ', $e->getMessage(), PHP_EOL;
 }
 
 ?>
 ```
+
+### Debug mode
 
 To get debugging output when you make an API request, you can call `$config->setDebug(true)`. By default, debug output goes to `stdout` via `php://output`, but you can redirect it a file with `$config->setDebugFile('<path>')`.
 
@@ -152,7 +188,8 @@ It also means that if a new version of an existing API is introduced, the librar
 ### Seller APIs
 * [A+ Content API (2020-11-01)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/AplusContentV20201101Api.md)
 * [Authorization API (V1)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/AuthorizationV1Api.md)
-* [Catalog Items API (2021-12-01)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/CatalogItemsV20211201Api.md)
+* [Catalog Items API (2022-04-01)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/CatalogItemsV20220401Api.md)
+* [Catalog Items API (2021-12-01)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/CatalogItemsV20201201Api.md)
 * [Catalog Items API (V0)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/CatalogItemsV0Api.md)
 * [EasyShip API (2022-03-23)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/EasyShipV20220323Api.md)
 * [FBA Inbound API (V0)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/FbaInboundV0Api.md)
@@ -169,6 +206,7 @@ It also means that if a new version of an existing API is introduced, the librar
 * [Notifications API (V1)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/NotificationsV1Api.md)
 * [Orders API (V0)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/OrdersV0Api.md)
 * [Product Pricing API (V0)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ProductPricingV0Api.md)
+* [Product Pricing API (V2022-05-01)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ProductPricingV20220501Api.md)
 * [Product Type Definitions API (2020-09-01)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ProductTypeDefinitionsV20200901Api.md)
 * [Reports API (2021-06-30)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ReportsV20210630Api.md)
 * [Sales API (V1)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/SalesV1Api.md)
@@ -176,6 +214,7 @@ It also means that if a new version of an existing API is introduced, the librar
 * [Service API (V1)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ServiceV1Api.md)
 * [Shipment Invoicing API (V0)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ShipmentInvoicingV0Api.md)
 * [Shipping API (V1)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ShippingV1Api.md)
+* [Shipping API (V2)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/ShippingV2Api.md)
 * [Small and Light API (V1)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/SmallAndLightV1Api.md)
 * [Solicitations API (V1)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/SolicitationsV1Api.md)
 * [Restricted Data Tokens API (2021-03-01)](https://github.com/jlevers/selling-partner-api/blob/main/docs/Api/TokensV20210301Api.md)
@@ -232,6 +271,13 @@ $data = $docToDownload->getData();
 // ... do something with report data
 ```
 
+If you are manipulating huge reports you can use `downloadStream()` to minimize the memory consumption. `downloadStream()` will return a `Psr\Http\Message\StreamInterface`.
+
+```php
+// line to replace >>>>$contents = $docToDownload->download();  // The raw report text
+$streamContents = $docToDownload->downloadStream();  // The raw report stream
+```
+
 ### Uploading a feed document
 
 ```php
@@ -254,8 +300,17 @@ $feedContents = file_get_contents('<your/feed/file.xml>');
 $docToUpload = new SellingPartnerApi\Document($feedDocumentInfo, $feedType);
 $docToUpload->upload($feedContents);
 
-// ... call FeedsApi::createFeed() with $feedDocumentId
+$createFeedSpec = new Feeds\CreateFeedSpecification();
+$createFeedSpec->setMarketplaceIds(['ATVPDKIKX0DER']);
+$createFeedSpec->setInputFeedDocumentId($feedDocumentId);
+$createFeedSpec->setFeedType($feedType['name']);
+
+$createFeedResult = $feedsApi->createFeed($createFeedSpec);
+$feedId = $createFeedResult->getFeedId();
 ```
+
+If you are manipulating huge feed documents you can pass to `upload()` anything that Guzzle can turn into a stream.
+
 
 ## Downloading a feed result document
 
@@ -275,10 +330,8 @@ $feedsApi = new FeedsApi($config);
 $feedId = '1234567890';  // From the createFeed call
 $feed = $api->getFeed($feedId);
 
-$feedResultDocumentId = $feed->getResultFeedDocumentId();
+$feedResultDocumentId = $feed->resultFeedDocumentId;
 $feedResultDocument = $api->getFeedDocument($feedResultDocumentId);
-
-$doc = new Document($documentInfo, $feedType);
 
 $docToDownload = new SellingPartnerApi\Document($feedResultDocument, $feedType);
 $contents = $docToDownload->download();  // The raw report data
@@ -286,9 +339,9 @@ $data = $docToDownload->getData();  // Parsed/formatted report data
 ```
 
 
-## Models
+## Working with model classes
 
-Most operations have one or more models associated with it. These models are classes that contain the data needed to make a certain kind of request to the API, or contain the data returned by a given request type. All of the models share the same general interface: you can either specify all the model's attributes during initialization, or use setter methods to set each attribute after the fact. Here's an example using the Service API's `Buyer` model ([docs](https://github.com/jlevers/selling-partner-api/blob/main/docs/Model/ServiceV1/Buyer.md), ([source](https://github.com/jlevers/selling-partner-api/blob/main/lib/Model/ServiceV1/Buyer.php)).
+Most operations have one or more models associated with it. These models are classes that contain the data needed to make a certain kind of request to the API, or contain the data returned by a given request type. All of the models share the same general interface: you can either specify all the model's attributes during initialization, or set each attribute after the fact. Here's an example using the Service API's `Buyer` model ([docs](https://github.com/jlevers/selling-partner-api/blob/main/docs/Model/ServiceV1/Buyer.md), ([source](https://github.com/jlevers/selling-partner-api/blob/main/lib/Model/ServiceV1/Buyer.php)).
 
 The `Buyer` model has four attributes: `buyer_id`, `name`, `phone`, and `is_prime_member`. (If you're wondering how you would figure out which attributes the model has on your own, check out the `docs` link above.) To create an instance of the `Buyer` model with all those attributes set:
 
@@ -305,19 +358,19 @@ Alternatively, you can create an instance of the `Buyer` model and then populate
 
 ```php
 $buyer = new SellingPartnerApi\Model\ServiceV1\Buyer();
-$buyer->setBuyerId("ABCDEFGHIJKLMNOPQRSTU0123456");
-$buyer->setName("Jane Doe");
-$buyer->setPhone("+12345678901");
-$buyer->setIsPrimeMember(true);
+$buyer->buyerId = "ABCDEFGHIJKLMNOPQRSTU0123456";
+$buyer->name = "Jane Doe";
+$buyer->phone = "+12345678901";
+$buyer->isPrimeMember = true;
 ```
 
-Each model also has the getter methods you might expect:
+Each model also has the property accessors you might expect:
 
 ```php
-$buyer->getBuyerId();        // -> "ABCDEFGHIJKLMNOPQRSTU0123456"
-$buyer->getName();           // -> "Jane Doe"
-$buyer->getPhone();          // -> "+12345678901"
-$buyer->getIsPrimeMember();  // -> true
+$buyer->buyerId;        // -> "ABCDEFGHIJKLMNOPQRSTU0123456"
+$buyer->name;           // -> "Jane Doe"
+$buyer->phone;          // -> "+12345678901"
+$buyer->isPrimeMember;  // -> true
 ```
 
 Models can (and usually do) have other models as attributes:
@@ -329,8 +382,8 @@ $serviceJob = new SellingPartnerApi\Model\ServiceV1\Buyer([
     // ...
 ]);
 
-$serviceJob->getBuyer();             // -> [Buyer instance]
-$serviceJob->getBuyer()->getName();  // -> "Jane Doe"
+$serviceJob->buyer;        // -> [Buyer instance]
+$serviceJob->buyer->name;  // -> "Jane Doe"
 ```
 
 
@@ -349,9 +402,103 @@ $config = new Configuration([...]);
 $api = new Api\SellersApi($config);
 try {
     $result = $api->getMarketplaceParticipations();
-    $headers = $result->getHeaders();
+    $headers = $result->headers;
     print_r($headers);
 } catch (Exception $e) {
-    echo 'Exception when calling SellersV1Api->getMarketplaceParticipations: ', $e->getMessage(), PHP_EOL;
+    echo 'Exception when calling SellersApi->getMarketplaceParticipations: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+## Custom Authorization Signer
+You may need to do custom operations while signing the API request. You can create a custom authorization signer by creating an implementation of the [AuthorizationSignerContract](lib/Contract/AuthorizationSignerContract.php) interface and passing it into the `Configuration` constructor array.
+
+```php
+// CustomAuthorizationSigner.php
+use GuzzleHttp\Psr7\Request;
+use SellingPartnerApi\Contract\AuthorizationSignerContract;
+
+class CustomAuthorizationSigner implements AuthorizationSignerContract
+{
+    public function sign(Request $request, Credentials $credentials): Request
+    {
+        // Calculate request signature and request date.
+        
+        $requestDate = '20220426T202300Z';
+        $signatureHeaderValue = 'some calculated signature value';
+        
+        $signedRequest = $request
+            ->withHeader('Authorization', $signatureHeaderValue)
+            ->withHeader('x-amz-date', $requestDate);
+        
+        return $signedRequest;
+    }
+
+    // ...
+}
+
+// Consumer code
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+use SellingPartnerApi\Api\SellersV1Api as SellersApi;
+use SellingPartnerApi\Configuration;
+use SellingPartnerApi\Endpoint;
+use CustomAuthorizationSigner;
+
+$config = new Configuration([
+    ..., 
+    'authorizationSigner' => new CustomAuthorizationSigner(),
+]);
+$api = new SellersApi($config);
+try {
+    $result = $api->getMarketplaceParticipations();
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling SellersApi->getMarketplaceParticipations: ', $e->getMessage(), PHP_EOL;
+}
+```
+
+## Custom Request Signer
+You may also need to customize the entire request signing process – for instance, if you need to call an external service in the process of signing the request. You can do so by creating an implementation of the [RequestSignerContract](lib/Contract/RequestSignerContract.php) interface, and passing an instance of it into the `Configuration` constructor array.
+
+```php
+// RemoteRequestSigner.php
+use GuzzleHttp\Psr7\Request;
+use SellingPartnerApi\Contract\RequestSignerContract;
+
+class RemoteRequestSigner implements RequestSignerContract
+{
+    public function signRequest(
+        Request $request,
+        ?string $scope = null,
+        ?string $restrictedPath = null,
+        ?string $operation = null
+    ): Request {
+        // Sign request by sending HTTP call
+        // to external/separate service instance.
+        
+        return $signedRequest;
+    }
+}
+
+// Consumer code
+<?php
+require_once(__DIR__ . '/vendor/autoload.php');
+
+use SellingPartnerApi\Api\SellersV1Api as SellersApi;
+use SellingPartnerApi\Configuration;
+use SellingPartnerApi\Endpoint;
+use RemoteRequestSigner;
+
+$config = new Configuration([
+    ..., 
+    'requestSigner' => new RemoteRequestSigner(),
+]);
+$api = new SellersApi($config);
+try {
+    $result = $api->getMarketplaceParticipations();
+    print_r($result);
+} catch (Exception $e) {
+    echo 'Exception when calling SellersApi->getMarketplaceParticipations: ', $e->getMessage(), PHP_EOL;
 }
 ```

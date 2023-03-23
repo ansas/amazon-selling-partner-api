@@ -3,7 +3,11 @@
 namespace SellingPartnerApi;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Header;
+use GuzzleHttp\Psr7\InflateStream;
+use GuzzleHttp\Psr7\Utils;
 use GuzzleHttp\RequestOptions;
+use Psr\Http\Message\StreamInterface;
 use RuntimeException;
 
 use SellingPartnerApi\Model\FeedsV20210630\CreateFeedDocumentResponse;
@@ -17,9 +21,11 @@ class Document
     private $url;
     private $compressionAlgo;
     private $contentType;
+    private $reportName;
     private $data;
     private $tmpFilename;
     private $client;
+    private $encoding;
 
     public $successfulFeedRecords = null;
     public $failedFeedRecords = null;
@@ -27,14 +33,14 @@ class Document
     /**
      * @param Model\Reports\ReportDocument|Model\Feeds\FeedDocument|Model\Feeds\CreateFeedDocumentResponse $documentInfo
      *      The payload of a successful call to getReportDocument, createFeedDocument, or getFeedDocument
-     * @param ?array['contentType' => string, 'name' => string] $documentType
+     * @param array['contentType' => string, 'name' => string] $documentType
      *      Must be one of the constants defined in the ReportType or FeedType classes. When downloading a feed
      *      result document, pass the FeedType constant corresponding to the feed type that produced the result document..
      * @param ?\GuzzleHttp\Client $client  The Guzzle client to use. If not provided, a new one will be created.
      */
     public function __construct(
         object $documentInfo,
-        ?array $documentType = ReportType::__FEED_RESULT_REPORT,  // $documentType will be required in the next major version
+        array $documentType,
         ?Client $client = null
     ) {
         // Make sure $documentInfo is a valid type
@@ -49,15 +55,13 @@ class Document
 
         if ($documentType === null) {
             throw new RuntimeException('$documentType cannot be null');
-        } else if ($documentType === ReportType::__FEED_RESULT_REPORT) {
-            echo 'ReportType::__FEED_RESULT_REPORT is deprecated, and may not result in a properly parsed feed result document.';
-            echo 'Please pass the feed type constant for the feed whose result document is being parsed (e.g., FeedType::POST_PRODUCT_DATA.';
         }
 
         $this->contentType = $documentType['contentType'];
+        $this->reportName = $documentType['name'];
 
         $validContentTypes = ContentType::getContentTypes();
-        if (!in_array($this->contentType, array_values($validContentTypes))) {
+        if (!in_array($this->contentType, array_values($validContentTypes), true)) {
             $readableContentTypes = [];
             foreach ($validContentTypes as $name => $value) {
                 $readableContentTypes[] = "SellingPartnerApi\ContentType::{$name} ($value)";
@@ -84,18 +88,27 @@ class Document
      *      XLSX: a PhpOffice\PhpSpreadsheet\Spreadsheet object
      *      XML: a SimpleXML object
      * @param ?string $encoding Pass specific $from_encoding to mb_convert_encoding funtion. If not provided,
-     *      internal mbstring encoding is used
+     *      try to automatically detect and use the encoding from the http response, otherwise internal mbstring encoding is used
      *
      * @return string The raw (unencrypted) document contents.
      */
     public function download(?bool $postProcess = true, ?string $encoding = null): string {
-        $rawContents = file_get_contents($this->url);
+        try {
+            $response = $this->client->request('GET', $this->url, ['stream' => true]);
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $response = $e->getResponse();
+            if ($response->getStatusCode() === 404) {
+                throw new RuntimeException("Report document not found ({$response->getStatusCode()}): {$response->getBody()}");
+            } else {
+                throw $e;
+            }
+        }
+
+        $rawContents = $response->getBody()->getContents();
 
         $contents = null;
-        if ($this->compressionAlgo !== null) {
-            if ($this->compressionAlgo === "GZIP") {
-                $contents = gzdecode($rawContents);
-            }
+        if ($this->compressionAlgo !== null && $this->compressionAlgo === "GZIP") {
+            $contents = gzdecode($rawContents);
         } else {
             $contents = $rawContents;
         }
@@ -111,11 +124,25 @@ class Document
         // typically ISO-8859-1 encoded, which messes up the data when we read it directly via
         // SimpleXML or as a plain TAB/CSV, but the original encoding is required to parse XLSX
         // and PDF reports.
+        // If encoding is not provided try to automatically detect the encoding from the http response; default is UTF-8
         if (!($this->contentType === ContentType::XLSX || $this->contentType === ContentType::PDF)) {
-            if (!is_null($encoding) && !in_array(strtoupper($encoding), mb_list_encodings())) {
+            if (!is_null($encoding) && !in_array(strtoupper($encoding), mb_list_encodings(), true)) {
                 $encoding = null;
+            } else if (is_null($encoding)) {
+                $encodings = ['UTF-8'];
+                if ($response->hasHeader('content-type')) {
+                    $httpContentType = $response->getHeader('content-type');
+                    $parsedHeader = \GuzzleHttp\Psr7\Header::parse($httpContentType);
+                    if (isset($parsedHeader[0]['charset'])) {
+                        // Some EU reports are reporting Cp1252 charset in the download headers and not being correctly
+                        // parsed by PHP. In those cases, replacing the encoding value with ISO-8859-1 allows PHP to
+                        // correctly detect and convert the document to UTF-8
+                        array_unshift($encodings, str_replace("Cp1252", "ISO-8859-1", $parsedHeader[0]['charset']));
+                    }
+                }
+                $encoding = mb_detect_encoding($contents, $encodings, true);
             }
-            $contents = mb_convert_encoding($contents, "UTF-8", $encoding ?? mb_internal_encoding());
+            $contents = mb_convert_encoding($contents, "UTF-8", $encoding ?: mb_internal_encoding());
         }
 
         switch ($this->contentType) {
@@ -136,13 +163,54 @@ class Document
     }
 
     /**
+     * Downloads the document data as a stream.
+     *
+     * @param resource|string|StreamInterface|null $output Optionally copy data stream to the given output.
+     *
+     * @return StreamInterface The raw (unencrypted) document stream..
+     */
+    public function downloadStream($output = null): StreamInterface {
+        try {
+            $response = $this->client->request('GET', $this->url, ['stream' => true]);
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            $response = $e->getResponse();
+            if ($response->getStatusCode() === 404) {
+                throw new RuntimeException("Report document not found ({$response->getStatusCode()}): {$response->getBody()}");
+            }
+            throw $e;
+        }
+
+        // trying to detect the document charset/encoding
+        $this->encoding = null;
+        $parsed = Header::parse($response->getHeader('content-type'));
+        foreach ($parsed as $header) {
+            if (isset($header['charset'])) {
+                $this->encoding = $header['charset'];
+                break;
+            }
+        }
+        $stream = $response->getBody();
+        if (strtolower((string) $this->compressionAlgo) === 'gzip') {
+            $stream = new InflateStream($stream);
+        }
+
+        if ($output) {
+            $output = Utils::streamFor($output);
+            Utils::copyToStream($stream, $output);
+            return $output;
+        }
+
+        return $stream;
+    }
+
+    /**
      * Uploads data to the document specified in the constructor.
      *
-     * @param string $feedData The contents of the feed to be uploaded
+     * @param string|resource|StreamInterface|callable|\Iterator $feedData The contents of the feed to be uploaded
      *
      * @return void
      */
-    public function upload(string $feedData): void {
+    public function upload($feedData): void {
         $response = $this->client->put($this->url, [
             RequestOptions::HEADERS => [
                 "content-type" => $this->contentType,
@@ -158,6 +226,10 @@ class Document
 
     public function getData() {
         return isset($this->data) ? $this->data : false;
+    }
+
+    public function getEncoding(): ?string {
+        return $this->encoding;
     }
 
     public function __destruct() {
