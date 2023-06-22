@@ -109,6 +109,12 @@ class Document
         $contents = null;
         if ($this->compressionAlgo !== null && $this->compressionAlgo === "GZIP") {
             $contents = gzdecode($rawContents);
+
+            // Workaround: Amazon may incorrectly report the file's compression information.
+            if ($contents === false) {
+                $contents = $rawContents;
+            }
+            
         } else {
             $contents = $rawContents;
         }
