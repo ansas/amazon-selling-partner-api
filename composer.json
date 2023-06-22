@@ -1,6 +1,6 @@
 {
     "name": "ansas/amazon-selling-partner-api",
-    "version": "5.7.1",
+    "version": "5.7.4",
     "description": "PHP client for Amazon's Selling Partner API",
     "keywords": [
         "api",
