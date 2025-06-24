@@ -13,54 +13,6 @@ class FeedType
         'contentType' => ContentType::JSON,
         'name' => 'JSON_LISTINGS_FEED'
     ];
-    public const POST_PRODUCT_DATA = [
-        'contentType' => ContentType::XML,
-        'name' => 'POST_PRODUCT_DATA'
-    ];
-    public const POST_INVENTORY_AVAILABILITY_DATA = [
-        'contentType' => ContentType::XML,
-        'name' => 'POST_INVENTORY_AVAILABILITY_DATA'
-    ];
-    public const POST_PRODUCT_OVERRIDES_DATA = [
-        'contentType' => ContentType::XML,
-        'name' => 'POST_PRODUCT_OVERRIDES_DATA'
-    ];
-    public const POST_PRODUCT_PRICING_DATA = [
-        'contentType' => ContentType::XML,
-        'name' => 'POST_PRODUCT_PRICING_DATA'
-    ];
-    public const POST_PRODUCT_IMAGE_DATA = [
-        'contentType' => ContentType::XML,
-        'name' => 'POST_PRODUCT_IMAGE_DATA'
-    ];
-    public const POST_PRODUCT_RELATIONSHIP_DATA = [
-        'contentType' => ContentType::XML,
-        'name' => 'POST_PRODUCT_RELATIONSHIP_DATA'
-    ];
-    public const POST_FLAT_FILE_INVLOADER_DATA = [
-        'contentType' => ContentType::TAB,
-        'name' => 'POST_FLAT_FILE_INVLOADER_DATA'
-    ];
-    public const POST_FLAT_FILE_LISTINGS_DATA = [
-        'contentType' => ContentType::TAB,
-        'name' => 'POST_FLAT_FILE_LISTINGS_DATA'
-    ];
-    public const POST_FLAT_FILE_BOOKLOADER_DATA = [
-        'contentType' => ContentType::TAB,
-        'name' => 'POST_FLAT_FILE_BOOKLOADER_DATA'
-    ];
-    public const POST_FLAT_FILE_CONVERGENCE_LISTINGS_DATA = [
-        'contentType' => ContentType::TAB,
-        'name' => 'POST_FLAT_FILE_CONVERGENCE_LISTINGS_DATA'
-    ];
-    public const POST_FLAT_FILE_PRICEANDQUANTITYONLY_UPDATE_DATA = [
-        'contentType' => ContentType::TAB,
-        'name' => 'POST_FLAT_FILE_PRICEANDQUANTITYONLY_UPDATE_DATA'
-    ];
-    public const POST_UIEE_BOOKLOADER_DATA = [
-        'contentType' => ContentType::PLAIN,
-        'name' => 'POST_UIEE_BOOKLOADER_DATA'
-    ];
     public const POST_STD_ACES_DATA = [
         'contentType' => ContentType::XML,
         'name' => 'POST_STD_ACES_DATA'

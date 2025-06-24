@@ -285,7 +285,7 @@ use SellingPartnerApi\Api\FeedsV20210630Api as FeedsApi;
 use SellingPartnerApi\FeedType;
 use SellingPartnerApi\Model\FeedsV20210630 as Feeds;
 
-$feedType = FeedType::POST_PRODUCT_PRICING_DATA;
+$feedType = FeedType::POST_PAYMENT_ADJUSTMENT_DATA;
 $feedsApi = new FeedsApi($config);
 
 // Create feed document
@@ -320,7 +320,7 @@ This works very similarly to downloading a report document:
 use SellingPartnerApi\Api\FeedsV20210630Api as FeedsApi;
 use SellingPartnerApi\FeedType;
 
-$feedType = FeedType::POST_PRODUCT_PRICING_DATA;
+$feedType = FeedType::POST_PAYMENT_ADJUSTMENT_DATA;
 $feedsApi = new FeedsApi($config);
 
 // ...
